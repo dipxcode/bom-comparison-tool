@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}New Comparison — BOMCompare{% endblock %}
+{% block nav_ctx %}New Comparison{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="bom-sidebar" id="sidebar">
+    <div class="sidebar-body">
+      <div class="sidebar-group">Workspace</div>
+      <a class="sidebar-link" href="{% url 'dashboard' %}"><i class="fa-solid fa-house-chimney"></i> Dashboard</a>
+      <a class="sidebar-link active" href="{% url 'comparison_upload' %}"><i class="fa-solid fa-code-compare"></i> New Comparison</a>
+      <a class="sidebar-link" href="{% url 'comparison_history' %}"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user.profile.get_initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="su-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="su-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a class="sidebar-link" href="{% url 'profile' %}"><i class="fa-regular fa-circle-user"></i> Profile Settings</a>
+      <a class="sidebar-link sl-danger" href="{% url 'logout' %}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+    </div>
+  </aside>
+
+  <main class="app-main">
+    <div class="upload-wrap">
+
+      <div class="page-head">
+        <h1>New BOM Comparison</h1>
+        <p>Upload your master XLSX and up to 5 target files to compare against it.</p>
+      </div>
+
+      <form id="uploadForm" action="{% url 'comparison_upload' %}" method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <!-- Session details -->
+        <div class="panel mb-4">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-tag" style="color:var(--teal)"></i> Session Details</h5>
+          </div>
+          <div class="panel-body">
+            <div class="row g-3">
+              <div class="col-md-7">
+                <label class="form-label-bom">Session Name <span style="color:var(--coral)">*</span></label>
+                <input type="text" name="name" class="bom-input" placeholder="e.g. Q2-2024 PCB BOM Review" required value="{{ form.name.value|default:'' }}">
+                {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-md-5">
+                <label class="form-label-bom">Key Column <span style="color:var(--text-muted);font-weight:400">(auto-detect if blank)</span></label>
+                <input type="text" name="key_column" class="bom-input" placeholder="e.g. MPN, part_number, sku" value="{{ form.key_column.value|default:'' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label-bom">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+                <textarea name="description" class="bom-input" rows="2" placeholder="Any notes about this comparison run…">{{ form.description.value|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master BOM -->
+        <div class="panel mb-4">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-crown" style="color:var(--amber)"></i> Master BOM <span style="color:var(--coral)">*</span></h5>
+            <span style="font-size:0.76rem;color:var(--text-muted);font-family:var(--font-mono);">XLSX only · 25 MB max</span>
+          </div>
+          <div class="panel-body">
+            <div class="drop-zone" id="masterZone">
+              <div class="drop-hint">
+                <span class="drop-icon"><i class="fa-solid fa-file-excel"></i></span>
+                <h5>Drop your Master BOM here</h5>
+                <p>or <span style="color:var(--teal);cursor:pointer;">click to browse</span> — XLSX format only</p>
+              </div>
+              <div class="file-shown">
+                <i class="fa-solid fa-file-circle-check" style="font-size:1.4rem;color:var(--emerald);flex-shrink:0"></i>
+                <div>
+                  <div class="fi-name">—</div>
+                  <div class="fi-meta">—</div>
+                </div>
+                <button type="button" class="opt-remove ms-auto" id="masterRemoveBtn" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <input type="file" name="master_file" id="masterFileInput" accept=".xlsx" style="display:none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Target files -->
+        <div class="panel mb-4">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-files" style="color:var(--violet)"></i> Target Files <span style="color:var(--coral)">*</span></h5>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:0.76rem;color:var(--text-muted);font-family:var(--font-mono);">
+                <span id="optCounter" style="color:var(--teal);font-weight:700;">0</span>/5 added
+              </span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="optZone" style="border:2px dashed var(--border-md);border-radius:var(--radius);padding:14px;transition:var(--transition);">
+              <div id="optGrid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+                <p style="text-align:center;color:var(--text-muted);font-size:0.82rem;font-family:var(--font-mono);padding:8px 0;margin:0;">No files added yet</p>
+              </div>
+              <button type="button" class="btn-add-opt" id="addOptBtn">
+                <i class="fa-solid fa-plus"></i> Add Target File
+              </button>
+            </div>
+            <p style="font-size:0.76rem;color:var(--text-muted);margin-top:10px;font-family:var(--font-mono);">
+              <i class="fa-solid fa-circle-info" style="color:var(--teal);margin-right:4px;"></i>
+              Accepted: CSV, XLSX, XLS, DOCX, PDF, TXT — 25 MB each
+            </p>
+          </div>
+        </div>
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div style="background:var(--coral-dim);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius);padding:12px 16px;color:#fca5a5;font-size:0.84rem;margin-bottom:16px;">
+          {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Submit -->
+        <div class="d-flex align-items-center gap-3">
+          <button type="submit" class="btn-primary-bom" id="submitBtn">
+            <i class="fa-solid fa-play"></i> Run Comparison
+          </button>
+          <a href="{% url 'dashboard' %}" style="color:var(--text-muted);font-size:0.88rem;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}

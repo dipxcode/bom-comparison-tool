@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+{% block title %}Results — {{ session.name }} — BOMCompare{% endblock %}
+{% block nav_ctx %}
+  <a href="{% url 'comparison_history' %}" style="color:var(--text-muted);">History</a>
+  <span style="margin:0 6px;color:var(--text-disabled);">›</span> Results
+{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="bom-sidebar" id="sidebar">
+    <div class="sidebar-body">
+      <div class="sidebar-group">Workspace</div>
+      <a class="sidebar-link" href="{% url 'dashboard' %}"><i class="fa-solid fa-house-chimney"></i> Dashboard</a>
+      <a class="sidebar-link" href="{% url 'comparison_upload' %}"><i class="fa-solid fa-code-compare"></i> New Comparison</a>
+      <a class="sidebar-link active" href="{% url 'comparison_history' %}"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user.profile.get_initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="su-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="su-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a class="sidebar-link" href="{% url 'profile' %}"><i class="fa-regular fa-circle-user"></i> Profile Settings</a>
+      <a class="sidebar-link sl-danger" href="{% url 'logout' %}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+    </div>
+  </aside>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow-x:hidden;">
+
+    <!-- Top bar -->
+    <div class="results-topbar">
+      <div>
+        <div class="results-session">{{ session.name }}</div>
+        <div class="results-meta">
+          {% if master_file %}
+          <i class="fa-solid fa-crown" style="color:var(--amber)"></i>
+          {{ master_file.original_name }} &nbsp;·&nbsp; {{ master_file.row_count }} rows
+          &nbsp;·&nbsp; {{ results.count }} comparison{% if results.count != 1 %}s{% endif %}
+          &nbsp;·&nbsp; {{ session.created_at|date:"M d, Y · H:i" }}
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'comparison_upload' %}" class="btn-outline-bom"><i class="fa-solid fa-plus"></i> New</a>
+        <button onclick="window.print()" class="btn-outline-bom"><i class="fa-solid fa-print"></i> Print</button>
+      </div>
+    </div>
+
+    <!-- Tab nav -->
+    <div class="rtabs-nav" id="rTabsNav">
+      {% for r in results %}
+      <button class="rtab-btn" data-target="rpane-{{ r.id }}">
+        <i class="fa-solid fa-file-lines" style="font-size:0.82rem;"></i>
+        {{ r.optional_file.original_name|truncatechars:22 }}
+        <span class="score-badge {% if r.match_score >= 90 %}score-excellent{% elif r.match_score >= 70 %}score-good{% elif r.match_score >= 50 %}score-fair{% else %}score-poor{% endif %}" style="font-size:0.68rem;padding:2px 8px;">{{ r.match_score|floatformat:1 }}%</span>
+      </button>
+      {% empty %}
+      <div style="padding:12px 20px;color:var(--text-muted);font-size:0.85rem;">No comparison results found.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Tab panes -->
+    <div style="padding:22px 28px;flex:1;overflow-x:auto;">
+      {% for r in results %}
+      <div class="rpane" id="rpane-{{ r.id }}" style="display:none;">
+
+        <!-- Score + summary bar -->
+        <div class="panel mb-3">
+          <div class="panel-body" style="padding:18px 22px;">
+            <div class="d-flex flex-wrap gap-4 align-items-center">
+              <!-- Score ring -->
+              <div class="score-ring" data-score="{{ r.match_score }}">
+                <svg viewBox="0 0 88 88" width="88" height="88">
+                  <circle class="ring-bg" cx="44" cy="44" r="36"/>
+                  <circle class="ring-fill" cx="44" cy="44" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"/>
+                </svg>
+                <div class="ring-label">
+                  <span class="ring-pct">—</span>
+                  <span class="ring-lbl">Score</span>
+                </div>
+              </div>
+              <!-- File info + download -->
+              <div>
+                <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;">
+                  {{ r.optional_file.original_name }}
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:3px;">
+                  {{ r.total_optional_rows }} rows &nbsp;·&nbsp;
+                  Key: <span style="color:var(--teal);">{{ r.key_column_used|default:"positional" }}</span>
+                  &nbsp;·&nbsp; {{ r.common_columns|length }} shared column{{ r.common_columns|length|pluralize }}
+                </div>
+                <div class="mt-2">
+                  <a href="{% url 'download_result' r.id %}" class="btn-download">
+                    <i class="fa-solid fa-download"></i> Download JSON
+                  </a>
+                </div>
+              </div>
+              <!-- Summary cards -->
+              <div class="summary-grid" style="flex:1;min-width:240px;">
+                <div class="sum-card">
+                  <div class="sum-val" style="color:var(--emerald)">{{ r.exact_match_count }}</div>
+                  <div class="sum-lbl">Exact Match</div>
+                </div>
+                <div class="sum-card">
+                  <div class="sum-val" style="color:var(--amber)">{{ r.partial_match_count }}</div>
+                  <div class="sum-lbl">Partial Match</div>
+                </div>
+                <div class="sum-card">
+                  <div class="sum-val" style="color:var(--coral)">{{ r.missing_count }}</div>
+                  <div class="sum-lbl">Missing</div>
+                </div>
+                <div class="sum-card">
+                  <div class="sum-val" style="color:var(--violet)">{{ r.extra_count }}</div>
+                  <div class="sum-lbl">Extra in Target</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="panel mb-3" style="background:var(--bg-surface);">
+          <div class="panel-body" style="padding:12px 20px;">
+            <div class="d-flex flex-wrap gap-4 align-items-center">
+              <span style="font-size:0.72rem;font-family:var(--font-mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;flex-shrink:0;">Legend:</span>
+              <span style="font-size:0.8rem;display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--emerald);font-weight:700;font-size:1rem;">✓</span>
+                <span style="color:var(--text-secondary);"><strong style="color:var(--emerald);">Exact</strong> — all field values identical</span>
+              </span>
+              <span style="font-size:0.8rem;display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--amber);font-weight:700;font-size:1rem;">≠</span>
+                <span style="color:var(--text-secondary);"><strong style="color:var(--amber);">Partial</strong> — key matched, some fields differ (amber = changed value)</span>
+              </span>
+              <span style="font-size:0.8rem;display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--coral);font-weight:700;font-size:1rem;">✗</span>
+                <span style="color:var(--text-secondary);"><strong style="color:var(--coral);">Missing</strong> — in master but absent from target</span>
+              </span>
+              <span style="font-size:0.8rem;display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--violet);font-weight:700;font-size:1rem;">+</span>
+                <span style="color:var(--text-secondary);"><strong style="color:var(--violet);">Extra</strong> — in target but not in master</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter pills -->
+        <div class="filter-row mb-3">
+          <button class="fpill active" data-filter="all" data-pane="rpane-{{ r.id }}">
+            All <span class="fcount">{{ r.total_master_rows|add:r.extra_count }}</span>
+          </button>
+          <button class="fpill {% if r.exact_match_count == 0 %}disabled{% endif %}" data-filter="exact" data-pane="rpane-{{ r.id }}" {% if r.exact_match_count == 0 %}disabled{% endif %}>
+            <span style="color:var(--emerald);">●</span> Exact
+            <span class="fcount">{{ r.exact_match_count }}</span>
+          </button>
+          <button class="fpill {% if r.partial_match_count == 0 %}disabled{% endif %}" data-filter="partial" data-pane="rpane-{{ r.id }}" {% if r.partial_match_count == 0 %}disabled{% endif %}>
+            <span style="color:var(--amber);">●</span> Partial
+            <span class="fcount">{{ r.partial_match_count }}</span>
+          </button>
+          <button class="fpill {% if r.missing_count == 0 %}disabled{% endif %}" data-filter="missing" data-pane="rpane-{{ r.id }}" {% if r.missing_count == 0 %}disabled{% endif %}>
+            <span style="color:var(--coral);">●</span> Missing
+            <span class="fcount">{{ r.missing_count }}</span>
+          </button>
+          <button class="fpill {% if r.extra_count == 0 %}disabled{% endif %}" data-filter="extra" data-pane="rpane-{{ r.id }}" {% if r.extra_count == 0 %}disabled{% endif %}>
+            <span style="color:var(--violet);">●</span> Extra in Target
+            <span class="fcount">{{ r.extra_count }}</span>
+          </button>
+        </div>
+
+        <!-- Diff table -->
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-table-columns" style="color:var(--teal)"></i> Side-by-Side Comparison</h5>
+            <span style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono);">
+              Master: {{ master_file.original_name|default:"—" }} &nbsp;vs&nbsp; {{ r.optional_file.original_name|truncatechars:28 }}
+            </span>
+          </div>
+          <div class="diff-table-wrap">
+            <table class="diff-table" id="dtable-{{ r.id }}">
+              <thead>
+                <tr id="dthead1-{{ r.id }}"></tr>
+                <tr id="dthead2-{{ r.id }}"></tr>
+              </thead>
+              <tbody id="dtbody-{{ r.id }}"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      {% empty %}
+      <div class="empty-state">
+        <i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i>
+        <h5>No results available</h5>
+        <p>This session may have encountered errors during processing.</p>
+        <a href="{% url 'comparison_upload' %}" class="btn-primary-bom mt-3" style="width:auto;padding:10px 22px;">
+          <i class="fa-solid fa-plus"></i> Try Again
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+{{ results_data|json_script:"bomResultsData" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+const RESULT_DATA = JSON.parse(
+  document.getElementById('bomResultsData').textContent
+);
+
+const STATUS_META = {
+  exact:   { icon: '✓', cls: 'ico-exact',   rowCls: 'row-exact',   keyColor: 'var(--emerald)' },
+  partial: { icon: '≠', cls: 'ico-partial', rowCls: 'row-partial', keyColor: 'var(--amber)'   },
+  missing: { icon: '✗', cls: 'ico-missing', rowCls: 'row-missing', keyColor: 'var(--coral)'   },
+  extra:   { icon: '+', cls: 'ico-extra',   rowCls: 'row-extra',   keyColor: 'var(--violet)'  },
+};
+
+function esc(s) {
+  return String(s ?? '—')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function buildHeader(resultId, key_col, common_cols) {
+  const h1 = document.getElementById(`dthead1-${resultId}`);
+  const h2 = document.getElementById(`dthead2-${resultId}`);
+  if (!h1 || !h2) return;
+
+  const colHeaders = common_cols.length
+    ? common_cols.map(c =>
+        `<th class="col-group-head" colspan="2" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.8px; text-align:center;padding:7px 10px;">${esc(c)}</th>`
+      ).join('')
+    : `<th class="col-group-head" colspan="2" style="text-align:center;padding:7px 10px;">Data</th>`;
+
+  h1.innerHTML = `
+    <th class="th-status" rowspan="2"
+        style="text-align:center;vertical-align:bottom;width:38px;">#</th>
+    <th class="th-key" rowspan="2"
+        style="vertical-align:bottom;white-space:nowrap;min-width:100px;">${esc(key_col)}</th>
+    ${colHeaders}`;
+
+  const subHeaders = common_cols.length
+    ? common_cols.map((_, i) => `
+        <th class="th-field master-head"
+            style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.8px;
+                   padding:5px 10px;color:var(--teal);background:rgba(0,191,165,0.05);
+                   border-right:1px dashed var(--border);text-align:center;">MASTER</th>
+        <th class="th-field target-head"
+            style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.8px;
+                   padding:5px 10px;color:var(--amber);background:rgba(245,166,35,0.05);
+                   ${i === common_cols.length - 1 ? '' : 'border-right:1px solid var(--border);'}
+                   text-align:center;">TARGET</th>`
+      ).join('')
+    : `<th class="th-field master-head" style="color:var(--teal);text-align:center;">MASTER</th>
+       <th class="th-field target-head" style="color:var(--amber);text-align:center;">TARGET</th>`;
+
+  h2.innerHTML = subHeaders;
+}
+
+function buildRow(row, common_cols) {
+  const meta = STATUS_META[row.status] || STATUS_META.exact;
+  let cells  = '';
+
+  if (!common_cols.length) {
+    const summaryMap = {
+      exact:   `<span style="color:var(--emerald)">All values identical</span>`,
+      partial: `<span style="color:var(--amber)">Some values differ</span>`,
+      missing: `<span style="color:var(--coral);font-style:italic;">Not present in target file</span>`,
+      extra:   `<span style="color:var(--violet);font-style:italic;">Not present in master file</span>`,
+    };
+    cells = `<td colspan="2" style="padding:10px 14px;font-size:0.82rem;">
+               ${summaryMap[row.status] || '—'}
+             </td>`;
+  } else {
+    cells = common_cols.map((col, idx) => {
+      const isLast  = idx === common_cols.length - 1;
+      const rBorder = isLast ? '' : 'border-right:1px solid var(--border);';
+
+      if (row.status === 'exact') {
+        const v = esc(row.column_comparison?.[col]?.master ?? row.master_full?.[col] ?? '—');
+        return `<td colspan="2" style="padding:9px 12px;text-align:center; font-family:var(--font-mono);font-size:0.79rem; color:var(--emerald);background:rgba(52,211,153,0.04); ${rBorder}">${v}</td>`;
+      }
+
+      if (row.status === 'partial') {
+        const cc   = row.column_comparison?.[col] ?? {};
+        const mv   = esc(cc.master   ?? row.master_full?.[col]   ?? '—');
+        const tv   = esc(cc.optional ?? row.optional_full?.[col] ?? '—');
+        const diff = (cc.match === false);
+
+        const masterCell = `
+          <td style="padding:9px 10px;font-family:var(--font-mono);font-size:0.79rem; background:rgba(0,191,165,0.04); border-right:1px dashed var(--border-md);vertical-align:middle;">
+            <span style="color:var(--text-primary);">${mv}</span>
+          </td>`;
+
+        const targetContent = diff
+          ? `<div style="color:var(--amber);font-weight:600;">${tv}</div>
+             <div style="font-size:0.65rem;color:var(--amber);opacity:0.7;margin-top:2px; font-family:var(--font-mono);">↑ changed</div>`
+          : `<span style="color:var(--emerald);">${tv}</span>`;
+
+        const targetCell = `
+          <td style="padding:9px 10px;font-family:var(--font-mono);font-size:0.79rem; background:${diff ? 'rgba(245,166,35,0.07)' : 'rgba(52,211,153,0.04)'}; ${rBorder}vertical-align:middle;">
+            ${targetContent}
+          </td>`;
+
+        return masterCell + targetCell;
+      }
+
+      if (row.status === 'missing') {
+        const mv = esc(row.master_data?.[col] ?? '—');
+        return `
+          <td style="padding:9px 10px;font-family:var(--font-mono);font-size:0.79rem; background:rgba(0,191,165,0.03);border-right:1px dashed var(--border-md);">
+            <span style="color:var(--text-secondary);">${mv}</span>
+          </td>
+          <td style="padding:9px 10px;${rBorder}">
+            <span style="font-style:italic;font-size:0.75rem; color:var(--coral);font-family:var(--font-mono);">not in target</span>
+          </td>`;
+      }
+
+      // extra
+      const tv = esc(row.optional_data?.[col] ?? '—');
+      return `
+        <td style="padding:9px 10px;border-right:1px dashed var(--border-md);">
+          <span style="font-style:italic;font-size:0.75rem; color:var(--violet);font-family:var(--font-mono);">not in master</span>
+        </td>
+        <td style="padding:9px 10px;font-family:var(--font-mono);font-size:0.79rem;${rBorder}">
+          <span style="color:var(--violet);">${tv}</span>
+        </td>`;
+    }).join('');
+  }
+
+  return `
+    <tr class="${meta.rowCls}" data-status="${row.status}" style="border-bottom:1px solid rgba(255,255,255,0.04);">
+      <td class="td-status" style="text-align:center;padding:10px 6px;vertical-align:middle;">
+        <span class="${meta.cls}" title="${row.status}" style="font-size:1rem;font-weight:700;">${meta.icon}</span>
+      </td>
+      <td style="padding:10px 14px;font-family:var(--font-mono);font-weight:700; font-size:0.82rem;white-space:nowrap;vertical-align:middle; color:${meta.keyColor};border-right:1px solid var(--border);">
+        ${esc(row.key)}
+      </td>
+      ${cells}
+    </tr>`;
+}
+
+function buildTable(resultId) {
+  const data = RESULT_DATA[resultId];
+  if (!data) return;
+  const { key_col, common_cols, details } = data;
+
+  buildHeader(resultId, key_col, common_cols);
+
+  const tbody = document.getElementById(`dtbody-${resultId}`);
+  if (!tbody) return;
+
+  const allRows = [
+    ...(details.matched  || []),
+    ...(details.partial  || []),
+    ...(details.missing  || []),
+    ...(details.extra    || []),
+  ];
+
+  if (!allRows.length) {
+    const span = 2 + (common_cols.length ? common_cols.length * 2 : 2);
+    tbody.innerHTML = `<tr><td colspan="${span}"
+      style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.88rem;">
+      No comparison data available for this file.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = allRows.map(row => buildRow(row, common_cols)).join('');
+}
+
+function initTabs() {
+  const btns = document.querySelectorAll('.rtab-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.rpane').forEach(p => p.style.display = 'none');
+      btn.classList.add('active');
+      const pane = document.getElementById(btn.dataset.target);
+      if (pane) pane.style.display = 'block';
+    });
+  });
+  if (btns.length) btns[0].click();
+}
+
+function initFilters() {
+  document.querySelectorAll('.fpill:not(.disabled)').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const pane = document.getElementById(pill.dataset.pane);
+      if (!pane) return;
+      pane.querySelectorAll('.fpill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const filter = pill.dataset.filter;
+      pane.querySelectorAll('tbody tr[data-status]').forEach(tr => {
+        tr.style.display = (filter === 'all' || tr.dataset.status === filter) ? '' : 'none';
+      });
+    });
+  });
+}
+
+function initRings() {
+  document.querySelectorAll('.score-ring[data-score]').forEach(wrap => {
+    const score = parseFloat(wrap.dataset.score) || 0;
+    const fill  = wrap.querySelector('.ring-fill');
+    const pctEl = wrap.querySelector('.ring-pct');
+    const r     = 36;
+    const circ  = 2 * Math.PI * r;
+    const col   = score >= 90 ? 'var(--emerald)'
+                : score >= 70 ? 'var(--sky)'
+                : score >= 50 ? 'var(--amber)'
+                :               'var(--coral)';
+    fill.style.stroke = col;
+    fill.setAttribute('stroke-dasharray',  circ);
+    fill.setAttribute('stroke-dashoffset', circ);
+    if (pctEl) { pctEl.textContent = score.toFixed(1) + '%'; pctEl.style.color = col; }
+    setTimeout(() => fill.setAttribute('stroke-dashoffset', circ - (score / 100) * circ), 250);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  Object.keys(RESULT_DATA).forEach(buildTable);
+  initTabs();
+  initFilters();
+  initRings();
+});
+</script>
+{% endblock %}

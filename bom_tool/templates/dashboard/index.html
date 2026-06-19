@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+{% block title %}Dashboard — BOMCompare{% endblock %}
+{% block nav_ctx %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────── -->
+  <aside class="bom-sidebar" id="sidebar">
+    <div class="sidebar-body">
+      <div class="sidebar-group">Workspace</div>
+      <a class="sidebar-link active" href="{% url 'dashboard' %}">
+        <i class="fa-solid fa-house-chimney"></i> Dashboard
+      </a>
+      <a class="sidebar-link" href="{% url 'comparison_upload' %}">
+        <i class="fa-solid fa-code-compare"></i> New Comparison
+      </a>
+      <a class="sidebar-link" href="{% url 'comparison_history' %}">
+        <i class="fa-solid fa-clock-rotate-left"></i> History
+        {% if session_stats.total %}<span class="sl-count">{{ session_stats.total }}</span>{% endif %}
+      </a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user.profile.get_initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="su-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="su-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a class="sidebar-link" href="{% url 'profile' %}"><i class="fa-regular fa-circle-user"></i> Profile Settings</a>
+      <a class="sidebar-link sl-danger" href="{% url 'logout' %}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ───────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- Header -->
+    <div class="page-head d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h1>Dashboard</h1>
+        <p>Welcome back, <strong>{{ user.first_name|default:user.username }}</strong> — here's your overview.</p>
+      </div>
+      <a href="{% url 'comparison_upload' %}" class="btn-primary-bom">
+        <i class="fa-solid fa-plus"></i> New Comparison
+      </a>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--teal-dim);color:var(--teal)"><i class="fa-solid fa-code-compare"></i></div>
+          <div class="stat-value">{{ session_stats.total|default:0 }}</div>
+          <div class="stat-label">Total Sessions</div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--emerald-dim);color:var(--emerald)"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="stat-value">{{ session_stats.completed|default:0 }}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--violet-dim);color:var(--violet)"><i class="fa-solid fa-file-arrow-up"></i></div>
+          <div class="stat-value">{{ total_files|default:0 }}</div>
+          <div class="stat-label">Files Uploaded</div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--amber-dim);color:var(--amber)"><i class="fa-solid fa-percent"></i></div>
+          <div class="stat-value">{% if session_stats.avg_score %}{{ session_stats.avg_score|floatformat:1 }}%{% else %}—{% endif %}</div>
+          <div class="stat-label">Avg Match Score</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-5">
+        <div class="panel h-100">
+          <div class="panel-header"><h5><i class="fa-solid fa-chart-donut" style="color:var(--teal)"></i> Score Distribution</h5></div>
+          <div class="panel-body d-flex align-items-center justify-content-center" style="min-height:200px;">
+            {% if session_stats.total %}
+            <div style="position:relative;width:190px;height:190px;">
+              <canvas id="scoreChart"></canvas>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+                <div style="font-family:var(--font-display);font-size:1.45rem;font-weight:700;">{{ session_stats.completed }}</div>
+                <div style="font-size:0.66rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;">done</div>
+              </div>
+            </div>
+            {% else %}
+            <div class="empty-state"><i class="fa-solid fa-chart-donut"></i><h5>No data yet</h5><p>Run a comparison first.</p></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="panel h-100">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-trophy" style="color:var(--amber)"></i> Top Results</h5>
+            <a href="{% url 'comparison_history' %}" style="font-size:0.8rem;color:var(--teal)">All history →</a>
+          </div>
+          {% if top_results %}
+          <div class="p-0">
+            <table class="data-table">
+              <thead><tr><th>File</th><th>Session</th><th>Score</th></tr></thead>
+              <tbody>
+                {% for r in top_results %}
+                <tr>
+                  <td style="font-size:0.83rem;font-family:var(--font-mono);">{{ r.optional_file.original_name|truncatechars:28 }}</td>
+                  <td style="font-size:0.8rem;color:var(--text-muted);">{{ r.session.name|truncatechars:24 }}</td>
+                  <td><span class="score-badge {{ r.get_score_badge_class }}">{{ r.match_score|floatformat:1 }}%</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="panel-body"><div class="empty-state" style="padding:30px 10px;"><i class="fa-solid fa-trophy"></i><h5>No results yet</h5></div></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    <div class="panel">
+      <div class="panel-header">
+        <h5><i class="fa-solid fa-clock-rotate-left" style="color:var(--violet)"></i> Recent Comparisons</h5>
+        <a href="{% url 'comparison_history' %}" style="font-size:0.8rem;color:var(--teal)">View all →</a>
+      </div>
+      {% if recent_sessions %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr><th>Session</th><th>Master File</th><th>Targets</th><th>Avg Score</th><th>Status</th><th>Date</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for s in recent_sessions %}
+            <tr>
+              <td><strong style="font-size:0.88rem;">{{ s.name|truncatechars:30 }}</strong></td>
+              <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);">
+                {% with s.get_master_file as mf %}{% if mf %}{{ mf.original_name|truncatechars:22 }}{% else %}—{% endif %}{% endwith %}
+              </td>
+              <td style="font-family:var(--font-mono);font-size:0.8rem;">{{ s.get_optional_files.count }}</td>
+              <td>
+                {% if s.avg_match_score > 0 %}
+                <span class="score-badge {% if s.avg_match_score >= 90 %}score-excellent{% elif s.avg_match_score >= 70 %}score-good{% elif s.avg_match_score >= 50 %}score-fair{% else %}score-poor{% endif %}">
+                  {{ s.avg_match_score|floatformat:1 }}%
+                </span>
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <span class="status-badge status-{{ s.status }}">
+                  <span class="sb-dot"></span>{{ s.get_status_display }}
+                </span>
+              </td>
+              <td style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-muted);">{{ s.created_at|naturaltime }}</td>
+              <td>
+                {% if s.status == 'completed' %}
+                <a href="{% url 'comparison_results' s.id %}" style="font-size:0.82rem;color:var(--teal);white-space:nowrap;">View →</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="panel-body">
+        <div class="empty-state">
+          <i class="fa-solid fa-code-compare"></i>
+          <h5>No comparisons yet</h5>
+          <p>Upload your master BOM and target files to get started.</p>
+          <a href="{% url 'comparison_upload' %}" class="btn-primary-bom mt-3"
+             style="display:inline-flex;width:auto;padding:8px 18px;font-size:0.84rem;">
+            <i class="fa-solid fa-plus"></i> New Comparison
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if session_stats.total and score_buckets %}
+const ctx = document.getElementById('scoreChart');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [{ data: {{ chart_data|safe }},
+        backgroundColor: ['#34D399','#60A5FA','#F5A623','#F87171'],
+        borderColor: '#162033', borderWidth: 3, hoverOffset: 5 }]
+    },
+    options: {
+      cutout: '70%', plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1E2D45', borderColor: 'rgba(0,191,165,0.3)', borderWidth: 1,
+          callbacks: { label: c => ` ${c.label}: ${c.raw}` }
+        }
+      }
+    }
+  });
+}
+{% endif %}
+</script>
+{% endblock %}

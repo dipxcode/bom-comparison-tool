@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+{% block title %}History — BOMCompare{% endblock %}
+{% block nav_ctx %}Comparison History{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="bom-sidebar" id="sidebar">
+    <div class="sidebar-body">
+      <div class="sidebar-group">Workspace</div>
+      <a class="sidebar-link" href="{% url 'dashboard' %}"><i class="fa-solid fa-house-chimney"></i> Dashboard</a>
+      <a class="sidebar-link" href="{% url 'comparison_upload' %}"><i class="fa-solid fa-code-compare"></i> New Comparison</a>
+      <a class="sidebar-link active" href="{% url 'comparison_history' %}">
+        <i class="fa-solid fa-clock-rotate-left"></i> History
+        {% if stats.total %}<span class="sl-count">{{ stats.total }}</span>{% endif %}
+      </a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user.profile.get_initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="su-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="su-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a class="sidebar-link" href="{% url 'profile' %}"><i class="fa-regular fa-circle-user"></i> Profile Settings</a>
+      <a class="sidebar-link sl-danger" href="{% url 'logout' %}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+    </div>
+  </aside>
+
+  <main class="app-main">
+
+    <div class="page-head">
+      <h1>Comparison History</h1>
+      <p>All past sessions — revisit results, download JSON, or delete entries.</p>
+    </div>
+
+    <!-- Summary strip -->
+    {% if stats.total %}
+    <div class="row g-3 mb-4">
+      <div class="col-4">
+        <div class="stat-card" style="padding:16px 18px;">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" style="font-size:1.7rem;">{{ stats.total }}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="stat-card" style="padding:16px 18px;">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" style="font-size:1.7rem;color:var(--emerald);">{{ stats.completed }}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="stat-card" style="padding:16px 18px;">
+          <div class="stat-label">Avg Score</div>
+          <div class="stat-value" style="font-size:1.7rem;color:var(--teal);">
+            {% if stats.avg_score %}{{ stats.avg_score|floatformat:1 }}%{% else %}—{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Search -->
+    <div class="panel mb-4">
+      <div class="panel-body" style="padding:12px 18px;">
+        <div style="position:relative;">
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
+          <input type="text" id="histSearch" class="bom-input" placeholder="Search by session name…" style="padding-left:36px !important;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Session list -->
+    <div id="histList">
+      {% for session in sessions %}
+      <div class="hist-card mb-3" id="session-card-{{ session.id }}"
+           style="transition:opacity 0.28s,transform 0.28s;"
+           data-name="{{ session.name|lower }}">
+
+        <!-- Status icon -->
+        <div class="hist-icon"
+          {% if session.status == 'completed' %}style="background:var(--emerald-dim);"
+          {% elif session.status == 'failed' %}style="background:var(--coral-dim);"
+          {% else %}style="background:var(--amber-dim);"{% endif %}>
+          {% if session.status == 'completed' %}
+            <i class="fa-solid fa-circle-check" style="color:var(--emerald);"></i>
+          {% elif session.status == 'failed' %}
+            <i class="fa-solid fa-circle-exclamation" style="color:var(--coral);"></i>
+          {% else %}
+            <i class="fa-solid fa-clock" style="color:var(--amber);"></i>
+          {% endif %}
+        </div>
+
+        <!-- Info -->
+        <div class="hist-info">
+          <div class="hist-name">{{ session.name }}</div>
+          <div class="hist-meta">
+            {% with session.get_master_file as mf %}{% if mf %}
+              <i class="fa-solid fa-crown" style="color:var(--amber);"></i>
+              {{ mf.original_name|truncatechars:26 }} &nbsp;·&nbsp;
+            {% endif %}{% endwith %}
+            {{ session.get_optional_files.count }} target file{{ session.get_optional_files.count|pluralize }}
+            &nbsp;·&nbsp; {{ session.created_at|naturaltime }}
+          </div>
+          <!-- Target file chips -->
+          <div class="d-flex flex-wrap gap-1 mt-2">
+            {% for f in session.get_optional_files %}
+            <span style="background:var(--bg-elevated);border:1px solid var(--border); border-radius:5px;padding:2px 8px; font-size:0.7rem;font-family:var(--font-mono);color:var(--text-muted);">
+              {{ f.original_name|truncatechars:20 }}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Avg score badge -->
+        {% if session.avg_match_score > 0 %}
+        <div style="flex-shrink:0;text-align:center;align-self:center;">
+          <div class="score-badge {% if session.avg_match_score >= 90 %}score-excellent{% elif session.avg_match_score >= 70 %}score-good{% elif session.avg_match_score >= 50 %}score-fair{% else %}score-poor{% endif %}" style="font-size:0.88rem;padding:5px 14px;display:block;text-align:center;">
+            {{ session.avg_match_score|floatformat:1 }}%
+          </div>
+          <div style="font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono); margin-top:4px;text-align:center;">avg score</div>
+        </div>
+        {% endif %}
+
+        <!-- Status badge -->
+        <div style="flex-shrink:0;align-self:center;">
+          <span class="status-badge status-{{ session.status }}">
+            <span class="sb-dot"></span>{{ session.get_status_display }}
+          </span>
+        </div>
+
+        <div class="hist-actions">
+          {% if session.status == 'completed' %}
+          <a href="{% url 'comparison_results' session.id %}" class="btn-outline-bom" style="padding:7px 14px;font-size:0.82rem;">
+            <i class="fa-solid fa-eye"></i> View
+          </a>
+          {% endif %}
+          <button class="btn-outline-bom" style="padding:7px 12px;font-size:0.82rem;color:var(--coral); border-color:rgba(248,113,113,0.3);" onclick="confirmDeleteSession({{ session.id }}, '{{ session.name|escapejs }}')" title="Delete session">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+
+      </div>
+      {% empty %}
+      <div class="empty-state" style="padding:80px 20px;">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <h5>No comparisons yet</h5>
+        <p>Your history will appear here after you run your first comparison.</p>
+        <a href="{% url 'comparison_upload' %}" class="btn-primary-bom mt-3" style="width:auto;display:inline-flex;padding:9px 22px;">
+          <i class="fa-solid fa-plus me-2"></i> Start First Comparison
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const searchInput = document.getElementById('histSearch');
+if (searchInput) {
+  searchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.hist-card').forEach(card => {
+      card.style.display = (!q || (card.dataset.name || '').includes(q)) ? '' : 'none';
+    });
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+{% block title %}Profile — BOMCompare{% endblock %}
+{% block nav_ctx %}Profile Settings{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="bom-sidebar" id="sidebar">
+    <div class="sidebar-body">
+      <div class="sidebar-group">Workspace</div>
+      <a class="sidebar-link" href="{% url 'dashboard' %}"><i class="fa-solid fa-house-chimney"></i> Dashboard</a>
+      <a class="sidebar-link" href="{% url 'comparison_upload' %}"><i class="fa-solid fa-code-compare"></i> New Comparison</a>
+      <a class="sidebar-link" href="{% url 'comparison_history' %}"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user.profile.get_initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="su-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="su-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a class="sidebar-link active" href="{% url 'profile' %}"><i class="fa-regular fa-circle-user"></i> Profile Settings</a>
+      <a class="sidebar-link sl-danger" href="{% url 'logout' %}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+    </div>
+  </aside>
+
+  <main class="app-main">
+
+    <div class="page-head">
+      <h1>Profile Settings</h1>
+      <p>Manage your account details and comparison preferences.</p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-3">
+        <div class="panel mb-3">
+          <div class="panel-body text-center" style="padding:28px 18px;">
+            <div class="profile-av mx-auto">{{ user.profile.get_initials }}</div>
+            <div style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-top:8px;">
+              {{ user.get_full_name|default:user.username }}
+            </div>
+            <div style="font-size:0.79rem;color:var(--text-muted);margin-top:3px;">{{ user.email }}</div>
+            {% if user.profile.company %}
+            <div style="margin-top:8px;font-size:0.8rem;color:var(--text-secondary);">
+              <i class="fa-solid fa-building me-1" style="color:var(--teal);"></i>{{ user.profile.company }}
+            </div>
+            {% endif %}
+            {% if user.profile.job_title %}
+            <div style="margin-top:3px;font-size:0.76rem;color:var(--text-muted);">{{ user.profile.job_title }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Stats card -->
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-chart-simple" style="color:var(--teal)"></i> Your Stats</h5>
+          </div>
+          <div class="panel-body" style="padding:0;">
+            <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:0.84rem;color:var(--text-secondary);">Total Comparisons</span>
+              <span style="font-family:var(--font-mono);font-weight:700;color:var(--teal);">{{ user.profile.total_comparisons }}</span>
+            </div>
+            <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:0.84rem;color:var(--text-secondary);">Files Uploaded</span>
+              <span style="font-family:var(--font-mono);font-weight:700;color:var(--violet);">{{ user.profile.total_files_uploaded }}</span>
+            </div>
+            <div style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:0.84rem;color:var(--text-secondary);">Member Since</span>
+              <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">{{ user.date_joined|date:"M Y" }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="col-lg-9">
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-pen-to-square" style="color:var(--teal)"></i> Edit Profile</h5>
+          </div>
+          <div class="panel-body">
+
+            {% if messages %}
+            {% for msg in messages %}
+            <div style="background:var(--emerald-dim);border:1px solid rgba(52,211,153,0.28);border-radius:var(--radius); padding:11px 16px;color:var(--emerald);margin-bottom:16px;font-size:0.86rem;">
+              <i class="fa-solid fa-circle-check me-2"></i>{{ msg }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" novalidate>
+              {% csrf_token %}
+              <div class="mb-4">
+                <div class="form-section-head"><i class="fa-solid fa-user me-2"></i>Personal Information</div>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">First Name</label>
+                    <input type="text" name="first_name" class="bom-input" value="{{ user.first_name }}">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">Last Name</label>
+                    <input type="text" name="last_name" class="bom-input" value="{{ user.last_name }}">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">Email</label>
+                    <input type="email" name="email" class="bom-input" value="{{ user.email }}">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">Phone</label>
+                    <input type="text" name="phone" class="bom-input" placeholder="+1 555 000 0000" value="{{ profile.phone }}">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Work -->
+              <div class="mb-4">
+                <div class="form-section-head"><i class="fa-solid fa-building me-2"></i>Work Details</div>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">Company</label>
+                    <input type="text" name="company" class="bom-input" placeholder="Acme Electronics" value="{{ profile.company }}">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">Job Title</label>
+                    <input type="text" name="job_title" class="bom-input" placeholder="Hardware Engineer" value="{{ profile.job_title }}">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label-bom">Bio</label>
+                    <textarea name="bio" class="bom-input" rows="2" placeholder="Brief description…">{{ profile.bio }}</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preferences -->
+              <div class="mb-4">
+                <div class="form-section-head"><i class="fa-solid fa-sliders me-2"></i>Preferences</div>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label-bom">Default Key Column</label>
+                    <input type="text" name="default_key_column" class="bom-input" placeholder="e.g. MPN, part_number" value="{{ profile.default_key_column }}">
+                    <div style="font-size:0.72rem;color:var(--text-muted);margin-top:5px;font-family:var(--font-mono);">
+                      Pre-fills the key column field on every new comparison
+                    </div>
+                  </div>
+                  <div class="col-sm-6 d-flex align-items-center gap-3 pt-3">
+                    <input class="form-check-input" type="checkbox" name="email_notifications" id="emailNotif" {% if profile.email_notifications %}checked{% endif %} style="width:17px;height:17px;cursor:pointer;">
+                    <label for="emailNotif" style="font-size:0.88rem;color:var(--text-secondary);cursor:pointer;">
+                      Email me when a comparison completes
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center gap-3">
+                <button type="submit" class="btn-primary-bom">
+                  <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+                <a href="{% url 'dashboard' %}" style="color:var(--text-muted);font-size:0.87rem;">
+                  <i class="fa-solid fa-arrow-left me-1"></i> Back
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Recent comparisons -->
+        {% if recent_comparisons %}
+        <div class="panel mt-4">
+          <div class="panel-header">
+            <h5><i class="fa-solid fa-clock-rotate-left" style="color:var(--violet)"></i> Recent Comparisons</h5>
+            <a href="{% url 'comparison_history' %}" style="font-size:0.8rem;color:var(--teal);">All history →</a>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Session</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for s in recent_comparisons %}
+                <tr>
+                  <td><strong style="font-size:0.87rem;">{{ s.name|truncatechars:34 }}</strong></td>
+                  <td>
+                    {% if s.avg_match_score > 0 %}
+                    <span class="score-badge {% if s.avg_match_score >= 90 %}score-excellent{% elif s.avg_match_score >= 70 %}score-good{% elif s.avg_match_score >= 50 %}score-fair{% else %}score-poor{% endif %}">
+                      {{ s.avg_match_score|floatformat:1 }}%
+                    </span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    <span class="status-badge status-{{ s.status }}">
+                      <span class="sb-dot"></span>{{ s.get_status_display }}
+                    </span>
+                  </td>
+                  <td style="font-size:0.76rem;color:var(--text-muted);font-family:var(--font-mono);">{{ s.created_at|naturaltime }}</td>
+                  <td>
+                    {% if s.status == 'completed' %}
+                    <a href="{% url 'comparison_results' s.id %}" style="font-size:0.82rem;color:var(--teal);">View →</a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
