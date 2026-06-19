@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}BOMCompare — Smart Bill of Materials Comparison{% endblock %}
+
+{% block content %}
+
+<!-- ════════════ HERO ════════════ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+
+  <div class="container">
+    <div class="row align-items-center g-5">
+
+      <!-- Copy -->
+      <div class="col-lg-6">
+        <div class="hero-badge"><span class="badge-dot"></span> Phase 1.0 — Now Live</div>
+        <h1 class="hero-title">
+          Compare BOMs with<br><span class="accent">Precision &amp; Speed</span>
+        </h1>
+        <p class="hero-subtitle">
+          Upload your master XLSX and compare it against up to 5 vendor or revision files.
+          Instantly see exact matches, mismatches, and missing components — side by side.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <button class="btn-nav-cta" style="padding:13px 30px;font-size:0.96rem;" data-bs-toggle="modal" data-bs-target="#registerModal">
+            <i class="fa-solid fa-rocket me-2"></i>Start Free
+          </button>
+          <button class="btn-nav-login" style="padding:12px 26px;font-size:0.96rem;" data-bs-toggle="modal" data-bs-target="#loginModal">
+            Sign In
+          </button>
+        </div>
+        <div class="d-flex gap-4 mt-4 flex-wrap">
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">
+            <i class="fa-solid fa-shield-halved me-1" style="color:var(--emerald)"></i>No data stored after session
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">
+            <i class="fa-solid fa-bolt me-1" style="color:var(--amber)"></i>Results in seconds
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">
+            <i class="fa-solid fa-file-lines me-1" style="color:var(--violet)"></i>6 file formats supported
+          </div>
+        </div>
+      </div>
+
+      <!-- Mockup card -->
+      <div class="col-lg-6 d-none d-lg-block">
+        <div class="hero-mockup">
+          <!-- Window chrome -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:18px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:var(--coral);"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:var(--amber);"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:var(--emerald);"></span>
+            <div style="flex:1;background:var(--bg-elevated);border-radius:4px;height:20px;margin-left:10px;"></div>
+          </div>
+          <!-- Score row -->
+          <div class="row g-2 mb-3">
+            <div class="col-3">
+              <div style="background:var(--bg-elevated);border-radius:8px;padding:10px 8px;text-align:center;">
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--teal);">94%</div>
+                <div style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;">Score</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div style="background:var(--bg-elevated);border-radius:8px;padding:10px 8px;text-align:center;">
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--emerald);">47</div>
+                <div style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;">Exact</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div style="background:var(--bg-elevated);border-radius:8px;padding:10px 8px;text-align:center;">
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--amber);">3</div>
+                <div style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;">Partial</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div style="background:var(--bg-elevated);border-radius:8px;padding:10px 8px;text-align:center;">
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--coral);">2</div>
+                <div style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;">Missing</div>
+              </div>
+            </div>
+          </div>
+          <!-- Progress bars -->
+          <div style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">vendor_bom.xlsx</div>
+          <div style="height:5px;background:var(--bg-elevated);border-radius:3px;margin-bottom:12px;overflow:hidden;">
+            <div style="width:94%;height:100%;background:linear-gradient(90deg,var(--teal),var(--emerald));border-radius:3px;"></div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">alt_supplier.csv</div>
+          <div style="height:5px;background:var(--bg-elevated);border-radius:3px;margin-bottom:16px;overflow:hidden;">
+            <div style="width:72%;height:100%;background:linear-gradient(90deg,var(--amber),var(--violet));border-radius:3px;"></div>
+          </div>
+          <!-- Mini table -->
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--bg-elevated); padding:7px 12px;font-family:var(--font-mono);font-size:0.62rem; color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">
+              <span>MPN</span><span>Qty</span><span>Status</span>
+            </div>
+            {% for i in "12345" %}
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:7px 12px; border-top:1px solid rgba(255,255,255,0.04);font-family:var(--font-mono); font-size:0.74rem;align-items:center;">
+              <span style="color:var(--text-secondary);">RC-{{ forloop.counter }}K</span>
+              <span>{{ forloop.counter }}00</span>
+              {% if forloop.counter == 3 %}
+                <span style="color:var(--amber);font-size:0.68rem;">⚠ Partial</span>
+              {% elif forloop.counter == 5 %}
+                <span style="color:var(--coral);font-size:0.68rem;">✗ Missing</span>
+              {% else %}
+                <span style="color:var(--emerald);font-size:0.68rem;">✓ Match</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section style="padding:90px 0;" id="features">
+  <div class="container text-center">
+    <div class="section-tag">Core Features</div>
+    <h2 class="section-title mb-2">Everything you need for BOM review</h2>
+    <p style="color:var(--text-secondary);max-width:520px;margin:0 auto 3rem;font-size:0.96rem;">
+      Built for hardware engineers and procurement teams who need accuracy fast.
+    </p>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:var(--teal-dim);color:var(--teal);"><i class="fa-solid fa-code-compare"></i></div>
+          <h4>Multi-File Comparison</h4>
+          <p>Compare your master BOM against up to 5 target files at once. Identify every difference across all files in a single run.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:var(--emerald-dim);color:var(--emerald);"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+          <h4>Smart Key Detection</h4>
+          <p>Automatically detects MPN, Part Number, SKU, Ref Des, and other key columns. Override with any custom column name.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:var(--violet-dim);color:var(--violet);"><i class="fa-solid fa-table-columns"></i></div>
+          <h4>Side-by-Side Diff Table</h4>
+          <p>Master and target values displayed in a clear side-by-side table. Color-coded rows for instant visual scanning of differences.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:var(--amber-dim);color:var(--amber);"><i class="fa-solid fa-chart-pie"></i></div>
+          <h4>Match Score &amp; Analytics</h4>
+          <p>Get a precise match score per file. See exact, partial, missing, and extra components broken out clearly with animated gauges.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:var(--coral-dim);color:var(--coral);"><i class="fa-solid fa-download"></i></div>
+          <h4>JSON Export</h4>
+          <p>Download the full comparison result as structured JSON — matched, partial, missing, and extra rows all included.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:var(--sky-dim);color:var(--sky);"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          <h4>Full History</h4>
+          <p>Every session is saved to your account. Review past comparisons, re-download results, and track changes over time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ HOW IT WORKS ════════════ -->
+<section style="padding:72px 0;background:var(--bg-surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);" id="how-it-works">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-tag">Process</div>
+      <h2 class="section-title">Three steps to clarity</h2>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div>
+            <h5 style="font-size:1.05rem;margin-bottom:7px;">Upload Files</h5>
+            <p style="color:var(--text-secondary);font-size:0.87rem;">Drag-and-drop your master XLSX and up to 5 target files. CSV, XLSX, DOCX, PDF, and TXT all supported — no conversion needed.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div>
+            <h5 style="font-size:1.05rem;margin-bottom:7px;">Auto Analysis</h5>
+            <p style="color:var(--text-secondary);font-size:0.87rem;">Our engine auto-detects the key column (MPN, Ref Des, SKU…), aligns rows, and compares every column value precisely.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div>
+            <h5 style="font-size:1.05rem;margin-bottom:7px;">Review &amp; Export</h5>
+            <p style="color:var(--text-secondary);font-size:0.87rem;">Browse the side-by-side diff table, filter by match category, check your score, and download results as JSON.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ FORMATS ════════════ -->
+<section style="padding:72px 0;" id="formats">
+  <div class="container text-center">
+    <div class="section-tag">Compatibility</div>
+    <h2 class="section-title mb-2" style="font-size:1.9rem;">Works with your existing files</h2>
+    <p style="color:var(--text-secondary);max-width:480px;margin:0 auto 2.5rem;font-size:0.94rem;">
+      No conversion. No plugins. Upload and compare.
+    </p>
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      <span class="fmt-pill"><span class="fmt-dot" style="background:var(--emerald);"></span> Master: XLSX</span>
+      <span class="fmt-pill"><span class="fmt-dot" style="background:var(--teal);"></span> CSV</span>
+      <span class="fmt-pill"><span class="fmt-dot" style="background:var(--sky);"></span> XLSX / XLS</span>
+      <span class="fmt-pill"><span class="fmt-dot" style="background:var(--violet);"></span> DOCX — Word</span>
+      <span class="fmt-pill"><span class="fmt-dot" style="background:var(--coral);"></span> PDF</span>
+      <span class="fmt-pill"><span class="fmt-dot" style="background:var(--amber);"></span> TXT</span>
+    </div>
+    <div style="margin-top:20px;font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">
+      Max 25 MB per file &nbsp;·&nbsp; Up to 5 target files per session
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ CTA ════════════ -->
+<section style="padding:90px 0;border-top:1px solid var(--border);background:radial-gradient(ellipse at center,rgba(0,191,165,0.05) 0%,transparent 70%);">
+  <div class="container">
+    <div class="cta-box">
+      <div class="section-tag mb-3">Get Started</div>
+      <h2 class="section-title mb-3">Ready to eliminate BOM errors?</h2>
+      <p style="color:var(--text-secondary);max-width:440px;margin:0 auto 2.4rem;font-size:0.96rem;">
+        Create a free account and run your first comparison in under two minutes. No credit card. No setup.
+      </p>
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <button class="btn-nav-cta" style="padding:13px 32px;font-size:0.96rem;" data-bs-toggle="modal" data-bs-target="#registerModal">
+          <i class="fa-solid fa-rocket me-2"></i>Create Free Account
+        </button>
+        <button class="btn-nav-login" style="padding:12px 26px;font-size:0.96rem;" data-bs-toggle="modal" data-bs-target="#loginModal">
+          Sign In Instead
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block footer %}
+<footer class="site-footer">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-3 mb-md-0">
+        <div style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:5px;">
+          <i class="fa-solid fa-microchip me-2" style="color:var(--teal)"></i>BOM<span style="color:var(--teal)">Compare</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">Smart BOM comparison for hardware engineers.</div>
+      </div>
+      <div class="col-md-4 text-md-center mb-3 mb-md-0">
+        <div style="font-size:0.76rem;color:var(--text-muted);">XLSX · CSV · XLS · DOCX · PDF · TXT</div>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <div style="font-size:0.76rem;color:var(--text-muted);">&copy; 2024 BOMCompare — Phase 1.0</div>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}

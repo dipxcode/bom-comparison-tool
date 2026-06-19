@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}BOMCompare{% endblock %}</title>
+  {% load static %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="bom-navbar">
+  <div class="container-fluid px-3 px-md-4">
+
+    {% if user.is_authenticated %}
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle me-2" id="sidebarToggle" aria-label="Toggle sidebar">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    {% endif %}
+
+    <!-- Brand -->
+    <a class="brand-wrap" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'landing' %}{% endif %}">
+      <span class="brand-icon"><i class="fa-solid fa-microchip"></i></span>
+      <span class="brand-name">BOM<span>Compare</span></span>
+    </a>
+
+    {% if user.is_authenticated %}
+    <!-- Authenticated: divider + page context, then user nameplate (no click) -->
+    <div class="nav-divider d-none d-md-block ms-2"></div>
+    <div class="nav-page-ctx d-none d-md-block ms-2">{% block nav_ctx %}{% endblock %}</div>
+    <div class="ms-auto">
+      <div class="user-nameplate">
+        <div class="user-avatar-sm">{{ user.profile.get_initials }}</div>
+        <span class="fullname d-none d-sm-inline">{{ user.get_full_name|default:user.username }}</span>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Public: nav links + auth buttons -->
+    <div class="nav-public-links ms-4 d-none d-md-flex">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#formats">Formats</a>
+    </div>
+    <div class="ms-auto d-flex gap-2">
+      <button class="btn-nav-login" data-bs-toggle="modal" data-bs-target="#loginModal">Sign In</button>
+      <button class="btn-nav-cta" data-bs-toggle="modal" data-bs-target="#registerModal">Get Started</button>
+    </div>
+    {% endif %}
+
+  </div>
+</nav>
+
+<!-- ═══════════════ PAGE CONTENT ═══════════════ -->
+{% block content %}{% endblock %}
+
+<!-- ═══════════════ FOOTER (public only) ═══════════════ -->
+{% block footer %}{% endblock %}
+
+<!-- ═══════════════ MOBILE SIDEBAR OVERLAY ═══════════════ -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ═══════════════ AUTH MODALS (public) ═══════════════ -->
+{% if not user.is_authenticated %}
+
+<!-- Login Modal -->
+<div class="modal fade bom-modal" id="loginModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">Welcome back</h5>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">Sign in to your BOMCompare account</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-error-box" id="loginErrBox"></div>
+        <form id="loginForm" novalidate>{% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label-bom">Email / Username</label>
+            <input type="text" name="username" class="bom-input" placeholder="your@email.com" required autocomplete="username">
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-bom">Password</label>
+            <div style="position:relative;">
+              <input type="password" name="password" id="loginPwd" class="bom-input" placeholder="••••••••" required>
+              <button type="button" onclick="togglePwd('loginPwd','loginPwdIco')"
+                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;">
+                <i id="loginPwdIco" class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+            <div class="invalid-feedback"></div>
+          </div>
+          <button type="submit" class="btn-modal-submit mt-1" id="loginBtn">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+          </button>
+        </form>
+        <div class="modal-switch-text mt-3">No account? <a href="#" onclick="switchModal('loginModal','registerModal')">Create one free →</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade bom-modal" id="registerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">Create your account</h5>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">Free — no credit card required</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-error-box" id="registerErrBox"></div>
+        <form id="registerForm" novalidate>{% csrf_token %}
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label-bom">First Name</label>
+              <input type="text" name="first_name" class="bom-input" placeholder="Ada" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label-bom">Last Name</label>
+              <input type="text" name="last_name" class="bom-input" placeholder="Lovelace" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label-bom">Work Email</label>
+              <input type="email" name="email" class="bom-input" placeholder="ada@company.com" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label-bom">Company <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+              <input type="text" name="company" class="bom-input" placeholder="Acme Electronics">
+            </div>
+            <div class="col-6">
+              <label class="form-label-bom">Password</label>
+              <div style="position:relative;">
+                <input type="password" name="password" id="regPwd" class="bom-input" placeholder="Min. 8 chars" required>
+                <button type="button" onclick="togglePwd('regPwd','regPwdIco')"
+                  style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;">
+                  <i id="regPwdIco" class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label-bom">Confirm Password</label>
+              <input type="password" name="confirm_password" class="bom-input" placeholder="Repeat" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="agree_terms" id="agreeTos" required>
+                <label class="form-check-label" for="agreeTos" style="font-size:0.84rem;color:var(--text-secondary);">
+                  I agree to the <a href="#" style="color:var(--teal);">Terms</a> &amp; <a href="#" style="color:var(--teal);">Privacy Policy</a>
+                </label>
+                <div class="invalid-feedback"></div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-modal-submit mt-3" id="registerBtn">
+            <i class="fa-solid fa-rocket"></i> Create Free Account
+          </button>
+        </form>
+        <div class="modal-switch-text mt-3">Already have an account? <a href="#" onclick="switchModal('registerModal','loginModal')">Sign in →</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Toast container -->
+<div class="bom-toast-container" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% load static %}
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+function togglePwd(id, icoId) {
+  const i = document.getElementById(id), ic = document.getElementById(icoId);
+  if (!i) return;
+  i.type = i.type === 'password' ? 'text' : 'password';
+  if (ic) ic.className = i.type === 'password' ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+}
+function switchModal(hideId, showId) {
+  const bsHide = bootstrap.Modal.getInstance(document.getElementById(hideId));
+  if (bsHide) bsHide.hide();
+  setTimeout(() => new bootstrap.Modal(document.getElementById(showId)).show(), 320);
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
