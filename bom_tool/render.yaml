@@ -1,8 +1,9 @@
 services:
   - type: web
-    name: bom-comparison-tool
+    name: bom-comparison
     env: python
     plan: free
+    rootDir: bom_tool
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
     startCommand: gunicorn bom_tool.wsgi:application
     envVars:
@@ -11,6 +12,6 @@ services:
       - key: DEBUG
         value: false
       - key: ALLOWED_HOSTS
-        value: "*"
+        value: bom-comparison.onrender.com
       - key: DATABASE_URL
         sync: false

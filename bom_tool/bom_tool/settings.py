@@ -1,14 +1,13 @@
-import os
 from pathlib import Path
-import dj_database_url
-from decouple import config, Csv
 from django.contrib.messages import constants as messages
+from decouple import config, Csv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -57,16 +56,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bom_tool.wsgi.application'
 
-# -----------------------------------------------
-# DATABASE — Neon PostgreSQL via DATABASE_URL
-# -----------------------------------------------
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
+# DATABASE_URL set → production (Render + Neon), otherwise → local PostgreSQL via .env vars
+_db_url = config('DATABASE_URL', default='')
+if _db_url:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=_db_url,
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='bomtool'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -97,7 +107,7 @@ LOGOUT_REDIRECT_URL = '/'
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25 MB
+MAX_UPLOAD_SIZE = 25 * 1024 * 1024
 ALLOWED_UPLOAD_EXTENSIONS = ['.xlsx', '.xls', '.csv', '.txt', '.docx', '.pdf']
 MAX_OPTIONAL_FILES = 5
 
@@ -108,7 +118,7 @@ BOM_KEY_COLUMNS = [
     'manufacturer_part_number', 'mpn', 'mfr_pn',
 ]
 
-SESSION_COOKIE_AGE = 86400 * 7  # 7 days
+SESSION_COOKIE_AGE = 86400 * 7
 SESSION_SAVE_EVERY_REQUEST = True
 
 MESSAGE_TAGS = {
